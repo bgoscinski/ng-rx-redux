@@ -1,30 +1,27 @@
 import {provider} from 'core.js'
-import {selfProvider} from 'lang.js'
+import {selfProvider, observableList} from 'lang.js'
 
-provider('todos', (reducerProvider) => {
+provider('todos', (reducerProvider, todoProvider) => {
   let todosUUID = 0;
 
-  const addTodo = (state, action) => state.concat([{
-    id: todosUUID++,
-    msg: action.msg,
-    done: action.done
-  }])
+  const addTodo = (state, action) => {
+    const newTodo = todoProvider({
+      id: todosUUID++,
+      msg: action.msg,
+      done: action.done
+    });
 
-  const delTodo = (state, action) => state.filter((t) => t.id !== action.id);
+    const newState = observableList(state.value.concat(newTodo));
+    state.dispose();
+    return newState;
+  }
 
-  const toggleTodo = (state, action) => state.map((t) => {
-    if (t.id === action.id) {
-      return { ...t, done: !t.done }
-    }
+  const delTodo = (state, action) => state.filter((t) => t.value.id !== action.id);
 
-    return t;
-  })
-
-  const stateObs = reducerProvider((state = [], action) => {
+  const stateObs = reducerProvider((state = observableList([]), action) => {
     switch (action.type) {
       case 'addTodo': return addTodo(state, action);
       case 'delTodo': return delTodo(state, action);
-      case 'toggleTodo': return toggleTodo(state, action);
     }
 
     return state

@@ -10,7 +10,7 @@ component('todos', {
     <div rx-if="$ctrl.list as todos : todos.length === 0">Add todo :)</div>
     <div rx-if="$ctrl.list as todos : todos.length > 0">
       <todo rx-repeat="$ctrl.list as todos : todo in todos"
-            data="todo"
+            data="todo.value"
             on-delete="$ctrl.onDelete({id: id})"
             on-toggle="$ctrl.onToggle({id: id})"
       ></todo>

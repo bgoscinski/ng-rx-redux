@@ -3,7 +3,7 @@ import Rx from 'rx';
 export const observableState = (actionsProvider) => (reducer) => {
   const state = new Rx.BehaviorSubject();
 
-  actionsProvider
+  const disposable = actionsProvider
     .startWith({})
     .scan(reducer, undefined)
     .distinctUntilChanged()
@@ -11,11 +11,17 @@ export const observableState = (actionsProvider) => (reducer) => {
       state.onNext(nextState);
     });
 
+  state.dispose = () => {
+    delete state.dispose;
+    disposable.dispose();
+    return state.dispose();
+  };
+
   return state;
 };
 
 export const observableMap = (reducersMap) => {
-  const state = new Rx.BehaviorSubject();
+  const state = new Rx.BehaviorSubject({});
   const keys = Object.keys(reducersMap);
   const reducers = keys.map((name) => reducersMap[name]);
   const {length} = keys;
@@ -29,23 +35,35 @@ export const observableMap = (reducersMap) => {
     return state;
   };
 
-  Rx.Observable
+  const disposable = Rx.Observable
     .combineLatest(...reducers, combine)
     .subscribe((nextState) => {
       state.onNext(nextState)
     });
 
+  state.dispose = () => {
+    delete state.dispose;
+    disposable.dispose();
+    return state.dispose();
+  }
+
   return state;
 }
 
 export const observableList = (reducersList) => {
-  const state = new Rx.BehaviorSubject();
+  const state = new Rx.BehaviorSubject([]);
 
-  Rx.Observable
+  const disposable = Rx.Observable
     .combineLatest(...reducersList)
     .subscribe((nextState) => {
       state.onNext(nextState);
-    })
+    });
+
+  state.dispose = () => {
+    delete state.dispose;
+    disposable.dispose();
+    return state.dispose();
+  }
 
   return state;
 };
