@@ -1,9 +1,9 @@
 import Rx from 'rx';
 
-export const observableState = (actionsProvider) => (reducer) => {
+export const observableState = (actions) => (reducer) => {
   const state = new Rx.BehaviorSubject();
 
-  const disposable = actionsProvider
+  const disposable = actions
     .startWith({})
     .scan(reducer, undefined)
     .distinctUntilChanged()

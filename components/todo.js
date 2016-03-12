@@ -2,15 +2,16 @@ import {component} from 'core.js';
 
 component('todo', {
   bindings: {
-    'data': '<',
+    'todo': '<data',
     'onDelete': '&',
     'onToggle': '&'
   },
 
   template: `
-    <p>{{::$ctrl.data.msg}}</p>
-    <div>{{$ctrl.data.done ? 'done' : 'undone'}}</div>
-    <button ng-click="$ctrl.onDelete({id: $ctrl.data.id})">Delete</button>
-    <button ng-click="$ctrl.onToggle({id: $ctrl.data.id})">Toggle</button>
+    <debug-cmp observable="$ctrl.todo" observe="todo"></debug-cmp>
+    <p rx-bind="$ctrl.todo as todo : todo.msg"></p>
+    <div rx-bind="$ctrl.todo as todo : todo.done ? 'done' : 'unndone'"></div>
+    <button ng-click="$ctrl.onDelete({id: $ctrl.todo.value.id})">Delete</button>
+    <button ng-click="$ctrl.onToggle({id: $ctrl.todo.value.id})">Toggle</button>
   `
 })
