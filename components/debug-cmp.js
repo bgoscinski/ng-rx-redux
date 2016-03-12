@@ -14,11 +14,12 @@ const NORMAL_STYLES = {
 component('debugCmp', {
   template: `
     <div><strong>{{$ctrl.observe}}:</strong></div>
-    <pre>{{$ctrl.debugInfo}}</pre>
+    <pre>{{$ctrl.debugValue | json}}</pre>
   `,
 
   bindings: {
-    observe: '@'
+    observe: '@?',
+    observable: '<?'
   },
 
   controller: class DebugCmp {
@@ -37,13 +38,12 @@ component('debugCmp', {
     }
 
     $onInit() {
-      this.$injector.get(this.observe)
-        .map((value) => JSON.stringify(value, null, 2))
-        .subscribe((text) => { this.update(text); })
+      (this.observable || this.$injector.get(this.observe))
+        .subscribe((debugValue) => { this.update(debugValue); })
     }
 
-    update(debugInfo) {
-      this.debugInfo = debugInfo;
+    update(debugValue) {
+      this.debugValue = debugValue;
       this.$animate.animate(this.$element, NORMAL_STYLES, CHANGED_STYLES)
         .then(() => {
           this.$animate.animate(this.$element, CHANGED_STYLES, NORMAL_STYLES)
