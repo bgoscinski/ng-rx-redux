@@ -1,16 +1,17 @@
 {
-  "name": "ngrr",
+  "name": "ng-rx-redux",
   "version": "1.0.0",
-  "description": "",
+  "description": "angular@1.x + Rx.js + Redux like state management test",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "bgoscinski",
+  "license": "DBAD",
   "devDependencies": {
-    "jspm": "^0.16.31"
+    "jspm": "^0.16.31",
+    "live-server": "^0.9.2"
   },
   "jspm": {
     "dependencies": {
