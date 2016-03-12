@@ -4,6 +4,8 @@
   "description": "angular@1.x + Rx.js + Redux like state management test",
   "main": "index.js",
   "scripts": {
+    "serve": "live-server",
+    "start": "npm run -s serve",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
