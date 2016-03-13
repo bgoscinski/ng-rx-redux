@@ -1,72 +1,199 @@
 import Rx from 'rx';
 
-export const observableState = (actions) => (reducer) => {
-  const state = new Rx.BehaviorSubject();
+const bind = Symbol('ngRxRedux: bind');
 
-  const disposable = actions
-    .startWith({})
-    .scan(reducer, undefined)
-    .distinctUntilChanged()
-    .subscribe((nextState) => {
-      state.onNext(nextState);
-    });
-
-  state.dispose = () => {
-    delete state.dispose;
-    disposable.dispose();
-    return state.dispose();
+const disposeTogether = (parentDisposable, childDisposable) => {
+  parentDisposable.dispose = () => {
+    delete parentDisposable.dispose;
+    childDisposable.dispose();
+    return parentDisposable.dispose();
   };
-
-  return state;
 };
 
-export const observableMap = (reducersMap) => {
-  const state = new Rx.BehaviorSubject({});
-  const keys = Object.keys(reducersMap);
-  const reducers = keys.map((name) => reducersMap[name]);
-  const {length} = keys;
+export const createStore = (state$, preMiddleware = [], postMiddleware = []) => {
+  const rawAction$ = new Rx.Subject();
+  const getState = () => state$.value;
+  const dispatch = (action) => rawAction$.onNext(action);
 
-  const combine = function () {
-    const state = {};
-    let i = -1;
+  const action$ = preMiddleware
+    .reduce((action$, middleware) => {
+      return middleware(action$, {
+        getState,
+        dispatch
+      }) || action$
+    }, rawAction$);
 
-    while (++i < length) state[keys[i]] = arguments[i];
+  state$[bind](action$, postMiddleware);
 
-    return state;
+  return {
+    action$: rawAction$,
+    getState,
+    dispatch
   };
-
-  const disposable = Rx.Observable
-    .combineLatest(...reducers, combine)
-    .subscribe((nextState) => {
-      state.onNext(nextState)
-    });
-
-  state.dispose = () => {
-    delete state.dispose;
-    disposable.dispose();
-    return state.dispose();
-  }
-
-  return state;
 }
 
-export const observableList = (reducersList) => {
-  const state = new Rx.BehaviorSubject([]);
+const forEach = (collection, callback) => {
+  if (collection) {
+    if (collection.forEach) {
+      collection.forEach(callback)
+    } else {
+      const keys = Object.keys(collection);
+      for (let i = 0, len = keys.length; i < len; i++) {
+        callback(collection[keys[i]]);
+      }
+    }
+  }
+}
 
-  const disposable = Rx.Observable
-    .combineLatest(...reducersList)
-    .subscribe((nextState) => {
-      state.onNext(nextState);
+export const createComposingReducer = (reducingFn) => {
+  const state$ = createReducer(reducingFn);
+
+  const handleSubs = (action$) => (rawState$) => {
+    let oldSubs = new Map();
+
+    return Rx.Observable.create((observer) => {
+      let reducers;
+      const onChange = () => { observer.onNext(reducers) }
+
+      const onNext = (_reducers) => {
+        const newSubs = new Map();
+        reducers = _reducers;
+
+        forEach(reducers, (reducer) => {
+          const subscription = oldSubs.get(reducer);
+
+          if (subscription) { // known one
+            newSubs.set(reducer, subscription)
+            oldSubs.delete(reducer);
+          } else { // new one
+            reducer[bind](action$);
+            newSubs.set(reducer, reducer.subscribe(onChange));
+          }
+        })
+
+        oldSubs.forEach((subscription) => {
+          subscription.dispose();
+        })
+
+        oldSubs.clear();
+        oldSubs = newSubs;
+        onChange();
+      };
+      const onError = (e) => { observer.onError(e); }
+      const onCompleted = () => { observer.onCompleted(); }
+
+      return rawState$.subscribe(onNext, onError, onCompleted);
     });
+  }
 
-  state.dispose = () => {
-    delete state.dispose;
-    disposable.dispose();
-    return state.dispose();
+  const bindReducer = state$[bind];
+  state$[bind] = (action$, middleware = []) => {
+    bindReducer(action$, [
+      handleSubs(action$),
+      ...middleware
+    ])
+  };
+
+  return state$;
+}
+
+export const createReducer = (reducingFn) => {
+  const state$ = new Rx.BehaviorSubject();
+
+  state$[bind] = (action$, middleware = []) => {
+    delete state$[bind];
+
+    const rawState$ = action$
+      .startWith({})
+      .scan(reducingFn, undefined)
+      .distinctUntilChanged();
+
+    const subscription = middleware
+      .reduce((state$, middleware) => {
+        return middleware(state$) || state$;
+      }, rawState$)
+      .subscribe((nextState) => {
+        state$.onNext(nextState);
+      })
+
+    disposeTogether(state$, subscription)
+  };
+
+  return state$;
+};
+
+const observableMap = (reducersMap) => {
+  const state$ = new Rx.BehaviorSubject({});
+
+  state$[bind] = (action$, middleware = []) => {
+    delete state$[bind];
+
+    const keys = Object.keys(reducersMap);
+    const reducersList = keys.map((name) => reducersMap[name]);
+    const {length} = keys;
+
+    const combine = function () {
+      const nextState = {};
+      for (let i = 0; i < length; i++) nextState[keys[i]] = arguments[i];
+      return nextState;
+    };
+
+    const rawState$ = Rx.Observable
+      .combineLatest(...reducersList, combine);
+
+    const subscription = middleware
+      .reduce((state$, middleware) => {
+        return middleware(state$) || state$;
+      }, rawState$)
+      .subscribe((nextState) => {
+        state$.onNext(nextState)
+      });
+
+    disposeTogether(state$, subscription)
+
+    reducersList.forEach((reducingFn) => {
+      reducingFn[bind](action$);
+    })
+  }
+
+  return state$;
+}
+
+const observableList = (reducersList) => {
+  const state$ = new Rx.BehaviorSubject([]);
+
+  state$[bind] = (action$, middleware = []) => {
+    delete state$[bind];
+
+    const rawState$ = Rx.Observable
+      .combineLatest(...reducersList)
+
+    const subscription = middleware
+      .reduce((state$, middleware) => {
+        return middleware(state$) || state$;
+      }, rawState$)
+      .subscribe((nextState) => {
+        state$.onNext(nextState);
+      });
+
+    disposeTogether(state$, subscription)
+
+    reducersList.forEach((reducingFn) => {
+      reducingFn[bind](action$);
+    })
   }
 
   return state;
 };
+
+
+export const composeReducers = (reducers) => {
+  if (Array.isArray(reducers)) {
+    return observableList(reducers)
+  }
+
+  return observableMap(reducers)
+}
 
 export const parseExpression = (exp) => {
   const [obsPart, ...ngExp] = exp.split(': ');

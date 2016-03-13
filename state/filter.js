@@ -1,16 +1,18 @@
-import {provider} from 'core.js'
-import {selfProvider} from 'lang.js'
+import {createReducer} from 'lang.js'
+import {constant} from 'core.js';
 
-provider('filter', (reducerProvider) => {
-  const setFilter = (state, action) => action.filter;
+const setFilter = (state, action) => action.filter;
 
-  const stateObs = reducerProvider((state = 'SHOW_ALL', action) => {
-    switch (action.type) {
-      case 'setFilter': return setFilter(state, action);
-    }
+constant('filter', createReducer((state = 'SHOW_ALL', action) => {
+  switch (action.type) {
+    case 'setFilter': return setFilter(state, action);
+  }
 
-    return state;
-  });
+  return state;
+}))
 
-  return Object.assign(stateObs, selfProvider(stateObs));
+constant('filterActions', {
+  all: () => ({type: 'setFilter', filter: 'SHOW_ALL'}),
+  done: () => ({type: 'setFilter', filter: 'SHOW_DONE'}),
+  undone: () => ({type: 'setFilter', filter: 'SHOW_UNDONE'}),
 })

@@ -1,22 +1,34 @@
-import {provider} from 'core.js'
-import {selfProvider} from 'lang.js'
+import {createReducer} from 'lang.js'
+import {constant} from 'core.js'
 
-provider('todo', (reducerProvider) => {
-  const factory = (initState) => {
-    const toggleTodo = (state, action) => ({...state, done: !state.done})
-    const delTodo = (state, action) => { stateObs.dispose(); return state; }
+constant('todo', (initState) => {
+  const delTodo = (state, action) => { stateObs.dispose(); return null; }
 
-    const stateObs = reducerProvider((state = initState, action) => {
-      if (state.id === action.id) switch (action.type) {
-        case 'toggleTodo': return toggleTodo(state, action);
-        case 'delTodo': return delTodo(state, action);
-      }
+  const toggleTodo = (state, action) => ({
+    ...state,
+    done: !state.done
+  })
 
-      return state;
-    });
+  const updatingTodo = (state, action) => ({
+    ...state,
+    loading: true,
+  })
 
-    return stateObs;
-  }
+  const updatedTodo = (state, action) => ({
+    ...state,
+    loading: false
+  })
 
-  return Object.assign(factory, selfProvider(factory));
+  const stateObs = createReducer((state = initState, action) => {
+    if (state.id === action.id) switch (action.type) {
+      case 'toggleTodo': return toggleTodo(state, action);
+      case 'updatingTodo': return updatingTodo(state, action);
+      case 'updatedTodo': return updatedTodo(state, action);
+      case 'delTodo': return delTodo(state, action);
+    }
+
+    return state;
+  });
+
+  return stateObs;
 })

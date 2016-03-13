@@ -4,7 +4,8 @@ import './rx-repeat.js';
 
 export {default as default} from './module.js'
 export {
-  observableState,
-  observableMap,
-  observableList
+  createReducer,
+  createComposingReducer,
+  composeReducers,
+  createStore,
 } from './helpers.js'
