@@ -7,8 +7,10 @@ component('addTodo', {
   },
 
   controller: class FormController {
-    constructor() {
-      this.form$ = new BehaviorSubject({});
+    constructor(form, formActions, store) {
+      this.form$ = form;
+      this.formActions = formActions;
+      this.store = store;
     }
 
     submit() {
@@ -16,14 +18,11 @@ component('addTodo', {
     }
 
     setMsg(msg) {
-      this.setForm({
-        ...this.form$.value,
-        msg
-      })
+      this.store.dispatch(this.formActions.update('msg', msg));
     }
 
     setForm(form) {
-      this.form$.next(form);
+      this.store.dispatch(this.formActions.replace(form));
     }
   },
 
