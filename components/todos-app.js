@@ -12,8 +12,8 @@ component('todosApp', {
       this.todosActions = todosActions;
     }
 
-    addTodo(msg) {
-      this.store.dispatch(this.todosActions.add(msg));
+    addTodo(msg, done) {
+      this.store.dispatch(this.todosActions.add(msg, done));
     }
 
     delTodo(id) {
@@ -28,7 +28,7 @@ component('todosApp', {
     <debug-cmp observe="todosApp"></debug-cmp>
     <debug-cmp observe="todos"></debug-cmp>
     <debug-cmp observe="filter"></debug-cmp>
-    <add-todo on-add="todosApp.addTodo(msg)"></add-todo>
+    <add-todo on-add="todosApp.addTodo(msg, done)"></add-todo>
     <todos list="::todosApp.todos"
            on-delete="todosApp.delTodo(id)"
            on-toggle="todosApp.toggleTodo(id)"

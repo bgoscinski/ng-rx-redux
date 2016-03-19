@@ -1,7 +1,8 @@
 import {directive} from './module.js'
-import {parseExpression, watch} from './helpers.js'
 
-directive('rxBind', (ngBindDirective, $parse) => {
+directive('rxBind', ['ngBindDirective', '$parseRxExpression',
+                     (ngBindDirective, $parseRxExpression) => {
+
   [ngBindDirective] = ngBindDirective;
 
   return {
@@ -10,15 +11,14 @@ directive('rxBind', (ngBindDirective, $parse) => {
     compile: (element) => {
       const link = ngBindDirective.compile(element);
       return ($scope, $element, $attr) => {
-        const {obsName, asName, ngExp} = parseExpression($attr.rxBind);
-
         $scope.$watch = (exp, listener) => {
-          delete $scope.$watch;
-          return watch($scope, obsName, asName, $parse(exp), listener);
-        };
+          delete $scope.$watch; // let the prototypal inheritance do it's job next time
+          $scope.$$rxWatchRxExpression($attr.rxBind).forEach(listener);
+        }
 
+        const [/*obsName*/, /*asName*/, ngExp] = $parseRxExpression($attr.rxBind);
         link($scope, $element, {ngBind: ngExp});
       }
     }
   }
-})
+}])

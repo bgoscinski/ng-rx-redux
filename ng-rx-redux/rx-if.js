@@ -1,21 +1,21 @@
 import {directive} from './module.js'
-import {parseExpression, watch} from './helpers.js'
 
-directive('rxIf', (ngIfDirective, $parse) => {
+directive('rxIf', ['ngIfDirective', '$parseRxExpression',
+                   (ngIfDirective, $parseRxExpression) => {
+
   [ngIfDirective] = ngIfDirective;
 
   return {
     ...ngIfDirective,
     name: 'rxIf',
     compile: () => ($scope, $element, $attr, ctrl, $transclude) => {
-      const {obsName, asName, ngExp} = parseExpression($attr.rxIf);
-
       $scope.$watch = (exp, listener) => {
-        delete $scope.$watch;
-        return watch($scope, obsName, asName, $parse(exp), listener);
-      };
+        delete $scope.$watch; // let the prototypal inheritance do it's job next time
+        $scope.$$rxWatchRxExpression($attr.rxIf).forEach(listener);
+      }
 
+      const [/*obsName*/, /*asName*/, ngExp] = $parseRxExpression($attr.rxIf);
       ngIfDirective.link($scope, $element, {ngIf: ngExp}, ctrl, $transclude);
     }
   }
-})
+}])

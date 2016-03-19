@@ -4,5 +4,9 @@ export {
   composeReducers,
   createStore,
 } from './ng-rx-redux/index.js';
-export {default as Rx} from 'rx';
-export {default as angular} from 'angular';
+
+export * from './ng-rx-redux/vendor.js';
+
+export const isObservable = (maybeObs) => {
+  return maybeObs && typeof maybeObs.subscribe === 'function';
+}

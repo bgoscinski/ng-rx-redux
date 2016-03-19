@@ -1,4 +1,5 @@
 import './rx-if.js';
+import './rx-model.js';
 import './rx-bind.js';
 import './rx-repeat.js';
 
