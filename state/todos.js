@@ -1,4 +1,4 @@
-import {createReducer, createComposingReducer} from 'lang.js'
+import {createReducer, createComposingReducer, FromObservable} from 'lang.js'
 import {factory, constantFactory} from 'core.js'
 
 constantFactory('todos', (todo) => {
@@ -33,9 +33,11 @@ factory('todosActions', ($timeout) => ({
   toggle: (id) => (dispatch) => {
     dispatch({type: 'updatingTodo', id});
 
-    $timeout(() => { // make api request
+    return FromObservable.create($timeout(() => { // make api request
       dispatch({type: 'updatedTodo', id});
       dispatch({type: 'toggleTodo', id});
-    }, 1000)
+
+      return 'yay!';
+    }, 1000))
   }
 }))

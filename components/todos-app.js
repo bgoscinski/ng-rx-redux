@@ -21,7 +21,11 @@ component('todosApp', {
     }
 
     toggleTodo(id) {
-      this.store.dispatch(this.todosActions.toggle(id));
+      this.store.dispatch(this.todosActions.toggle(id))
+        .subscribe((msg) => {
+          console.log('got return value from dispatch', msg)
+
+        })
     }
   },
   template: `

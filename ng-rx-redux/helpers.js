@@ -1,16 +1,13 @@
-import {eq, mapKeys} from 'lodash'
-import {forEach} from 'lodash/fp'
+import {eq, mapKeys, forEach, flowRight, functions} from 'lodash'
 import {
   Observable,
   BehaviorSubject,
   map,
   distinctUntilChanged,
-  share,
   publish,
   startWith,
   scan,
   switchMap,
-  merge,
   mergeStatic,
   combineLatestStatic,
 } from './vendor.js'
@@ -20,9 +17,9 @@ const reducerBindings = new WeakMap();
 const createState = (bindReducer, initValue) => {
   const state$ = new BehaviorSubject(initValue);
 
-  reducerBindings.set(state$, (action$, postMiddleware) => {
+  reducerBindings.set(state$, (action$, postMiddlewares) => {
     reducerBindings.delete(state$);
-    bindReducer(state$, action$, postMiddleware);
+    bindReducer(state$, action$, postMiddlewares);
   });
 
   return state$;
@@ -35,64 +32,61 @@ const decorateState = (state$, decorator) => {
     throw new Error();
   }
 
-  reducerBindings.set(state$, (action$, postMiddleware = []) => {
-    originalBind(action$, [decorator, ...postMiddleware]);
+  reducerBindings.set(state$, (action$, postMiddlewares = []) => {
+    originalBind(action$, [decorator, ...postMiddlewares]);
   })
 
   return state$;
 }
 
-const applyMiddleware = (middleware = [], base$, ...args) => {
+const applyMiddlewares = (middlewares = [], base$, ...args) => {
   const apply = (base$, middleware) => middleware(base$, ...args) || base$
-  return middleware.reduce(apply, base$);
+  return middlewares.reduce(apply, base$);
 }
 
 
-export const watchify = () => {
-  let isFirst = true;
-  let prevValue;
 
-  return this::map((value) => {
-    if (isFirst) {
-      prevValue = value;
-      isFirst = false;
-    }
+export const bindActionCreators = (actionCreators, dispatch, dest = {}) => {
+  if (typeof actionCreators === 'function') {
+    return flowRight(dispatch, actionCreators)
+  }
 
-    const ret = [value, prevValue];
-    prevValue = value;
-
-    return ret;
-  })
+  return functions(actionCreators).reduce((dest, creatorName) => {
+    dest[creatorName] = flowRight(dispatch, actionCreators[creatorName]);
+    return dest;
+  }, dest);
 }
 
-export const createStore = (state$, preMiddleware = [], postMiddleware = []) => {
-  const getState = () => state$.value;
-
-  let observer;
-  const dispatch = (action) => observer.next(action);
-  const action$ = Observable.create((_observer) => {
-    observer = _observer
+export const createStore = (state$, preMiddlewares = [], postMiddlewares = []) => {
+  let rawActions;
+  const rawAction$ = Observable.create((observer) => {
+    rawActions = observer
   });
 
-  const processedAction$ = applyMiddleware(preMiddleware, action$, {
-    getState,
-    dispatch
-  })::share()
+  const getState = ::state$.getValue
+  const middlewareApi = {getState, dispatch: (action) => dispatch(action)}
 
-  reducerBindings.get(state$)(processedAction$, postMiddleware);
-  // processedAction$.connect();
+  const chain = preMiddlewares.map((middleware) => middleware(middlewareApi));
+  const dispatch = chain.reduceRight(
+    (next, middlewares) => middlewares(next),
+    (action) => rawActions.next(action)
+  );
 
-  return {action$: processedAction$, getState, dispatch};
+  const action$ = rawAction$::publish()
+  reducerBindings.get(state$)(action$, postMiddlewares);
+  action$.connect();
+
+  return {getState, dispatch};
 }
 
 export const createReducer = (reducingFn) => {
-  return createState((state$, action$, middleware = []) => {
+  return createState((state$, action$, middlewares = []) => {
     const rawState$ = action$
       ::startWith(undefined, {})
       ::scan(reducingFn)
       ::distinctUntilChanged();
 
-    const processedState$ = applyMiddleware(middleware, rawState$, action$);
+    const processedState$ = applyMiddlewares(middlewares, rawState$, action$);
     state$.add(processedState$.subscribe(state$));
   });
 }
@@ -123,16 +117,16 @@ export const composeReducerList = (reducersList) => {
 };
 
 const _composeReducerList = (reducersList, initValue) => {
-  return createState((state$, action$, middleware = []) => {
+  return createState((state$, action$, middlewares = []) => {
     const rawState$ = combineLatestStatic(reducersList, (...values) => {
       return values;
     });
 
-    const processedState$ = applyMiddleware(middleware, rawState$, action$);
+    const processedState$ = applyMiddlewares(middlewares, rawState$, action$);
 
-    forEach((reducer) => {
+    reducersList.forEach((reducer) => {
       reducerBindings.get(reducer)(action$);
-    }, reducersList)
+    })
 
     state$.add(processedState$.subscribe(state$));
   }, initValue)
@@ -143,16 +137,16 @@ export const createComposingReducer = (reducingFn) => {
     return Observable.create((observer) => {
       const outerChanges$ = rawState$::publish();
 
-      const bindReducers = forEach((reducer) => {
+      const tryBindReducer = (reducer) => {
         const bindReducer = reducerBindings.get(reducer)
         if (bindReducer) {
           bindReducer(action$);
         }
-      });
+      };
 
       let reducers;
       const sub = outerChanges$.subscribe((_reducers) => {
-        bindReducers(reducers = _reducers);
+        forEach(reducers = _reducers, tryBindReducer);
       });
 
       const innerChanges$ = outerChanges$
