@@ -1,6 +1,6 @@
 {
   "name": "ng-rx-redux",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "angular@1.x + Rx.js + Redux like state management test",
   "main": "index.js",
   "scripts": {
