@@ -2,7 +2,7 @@
   "name": "ng-rx-redux",
   "version": "2.1.0",
   "description": "angular@1.x + Rx.js + Redux like state management test",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "serve": "live-server",
     "start": "npm run -s serve",
@@ -12,29 +12,44 @@
   "author": "bgoscinski",
   "license": "DBAD",
   "devDependencies": {
-    "jspm": "^0.16.31",
-    "live-server": "^0.9.2"
+    "jspm": "^0.17.0-beta.11"
   },
   "jspm": {
+    "name": "ng-rx-redux",
     "dependencies": {
-      "angular": "github:angular/bower-angular@^1.5.0",
-      "angular-animate": "github:angular/bower-angular-animate@^1.5.0",
-      "lodash": "npm:lodash@^4.6.1",
-      "redux-thunk": "github:gaearon/redux-thunk@^2.0.1",
       "rxjs": "npm:rxjs@^5.0.0-beta.2"
     },
     "devDependencies": {
-      "babel": "npm:babel-core@^5.8.24",
-      "babel-runtime": "npm:babel-runtime@^5.8.24",
-      "core-js": "npm:core-js@^1.1.4"
+      "plugin-typescript": "github:frankwallis/plugin-typescript@^4.0.2"
+    },
+    "peerDependencies": {
+      "angular": "github:angular/bower-angular@^1.5.2",
+      "core-js": "npm:core-js@^1.2.0",
+      "fs": "github:jspm/nodelibs-fs@^0.2.0-alpha",
+      "path": "github:jspm/nodelibs-path@^0.2.0-alpha",
+      "process": "github:jspm/nodelibs-process@^0.2.0-alpha"
     },
     "overrides": {
-      "github:gaearon/redux-thunk@2.0.1": {
-        "format": "esm",
-        "directories": {
-          "lib": "src"
-        },
-        "main": "index.js"
+      "github:angular/bower-angular@1.5.2": {
+        "main": "angular",
+        "meta": {
+          "angular.js": {
+            "exports": "angular",
+            "format": "global"
+          }
+        }
+      },
+      "npm:typescript@1.8.9": {
+        "browser": {},
+        "map": {
+          "buffer": "@empty",
+          "child_process": "@empty",
+          "fs": "@empty",
+          "os": "@empty",
+          "path": "@empty",
+          "process": "@empty",
+          "readline": "@empty"
+        }
       }
     }
   }

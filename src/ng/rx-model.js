@@ -1,8 +1,11 @@
 import {eq} from 'lodash'
-import {get, set} from 'lodash/fp'
-import {directive} from './module.js'
-import {distinctUntilChanged, map, BehaviorSubject, share} from './vendor.js'
+import {set} from 'lodash/fp'
+import {map} from 'rxjs/operator/map.js';
+import {distinctUntilChanged} from 'rxjs/operator/distinctUntilChanged.js';
+import {share} from 'rxjs/operator/share.js';
+import {BehaviorSubject} from 'rxjs/subject/BehaviorSubject.js';
 
+import {directive} from './module.js'
 
 directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $exceptionHandler) => {
   const priority = ngModelDirective[0].priority + 1;
@@ -21,7 +24,7 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
     Object.defineProperty(rxModel.ngModel, propertyName, {
       enumerable: true,
       configurable: true,
-      get: ::stream.getValue,
+      get: () => stream.getValue(),
       set(nextValue) {
         if (!eq(nextValue, stream.getValue())) {
           stream.next(nextValue)
@@ -38,7 +41,7 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
       });
     })
 
-    rxModel.$scope.$on('$destroy', ::stream.unsubscribe);
+    rxModel.$scope.$on('$destroy', stream.unsubscribe.bind(stream));
 
     return stream;
   }

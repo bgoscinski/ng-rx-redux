@@ -1,16 +1,16 @@
 import {forEach, flowRight, functions} from 'lodash'
-import {
-  Observable,
-  BehaviorSubject,
-  map,
-  distinctUntilChanged,
-  publish,
-  startWith,
-  scan,
-  switchMap,
-  mergeStatic,
-  combineLatestStatic,
-} from './vendor.js'
+
+import {Observable} from 'rxjs/Observable.js';
+import {BehaviorSubject} from 'rxjs/subject/BehaviorSubject.js';
+import 'rxjs/add/observable/merge.js'
+import 'rxjs/add/observable/combineLatest.js'
+
+import 'rxjs/add/operator/map.js';
+import 'rxjs/add/operator/distinctUntilChanged.js';
+import 'rxjs/add/operator/publish.js';
+import 'rxjs/add/operator/startWith.js'
+import 'rxjs/add/operator/scan.js'
+import 'rxjs/add/operator/switchMap.js'
 
 const reducerBindings = new WeakMap();
 
@@ -67,7 +67,7 @@ export const createStore = (state$, preMiddlewares = [], postMiddlewares = []) =
     rawActions = observer
   });
 
-  const getState = ::state$.getValue
+  const getState = () => state$.getValue()
   const middlewareApi = {getState, dispatch: (action) => dispatch(action)}
 
   const chain = preMiddlewares.map((middleware) => middleware(middlewareApi));
@@ -76,7 +76,7 @@ export const createStore = (state$, preMiddlewares = [], postMiddlewares = []) =
     (action) => rawActions.next(action)
   );
 
-  const action$ = rawAction$::publish()
+  const action$ = rawAction$.publish()
   reducerBindings.get(state$)(action$, postMiddlewares);
   action$.connect();
 
@@ -86,9 +86,9 @@ export const createStore = (state$, preMiddlewares = [], postMiddlewares = []) =
 export const createReducer = (reducingFn) => {
   return createState((state$, action$, middlewares = []) => {
     const rawState$ = action$
-      ::startWith(undefined, {})
-      ::scan(reducingFn)
-      ::distinctUntilChanged();
+      .startWith(undefined, {})
+      .scan(reducingFn)
+      .distinctUntilChanged();
 
     const processedState$ = applyMiddlewares(middlewares, rawState$, action$);
     state$.add(processedState$.subscribe(state$));
@@ -118,7 +118,7 @@ export const combineReducerMap = (reducersMap) => {
       return valuesMap;
     };
 
-    return state$::map(toValuesMap)
+    return state$.map(toValuesMap)
   });
 }
 
@@ -129,7 +129,7 @@ export const combineReducerList = (reducersList) => {
 const _combineReducerList = (reducersList, initValue) => {
   return createState((state$, action$, middlewares = []) => {
     const toValuesList = (...values) => values;
-    const rawState$ = combineLatestStatic(reducersList, toValuesList);
+    const rawState$ = Observable.combineLatest(reducersList, toValuesList);
     const processedState$ = applyMiddlewares(middlewares, rawState$, action$);
 
     reducersList.forEach((reducer) => {
@@ -143,7 +143,7 @@ const _combineReducerList = (reducersList, initValue) => {
 export const createCombiningReducer = (reducingFn) => {
   return decorateState(createReducer(reducingFn), (rawState$, action$) => {
     return Observable.create((observer) => {
-      const outerChanges$ = rawState$::publish();
+      const outerChanges$ = rawState$.publish();
 
       let reducers;
       const sub = outerChanges$.subscribe((_reducers = []) => {
@@ -159,8 +159,8 @@ export const createCombiningReducer = (reducingFn) => {
       });
 
       const innerChanges$ = outerChanges$
-        ::switchMap((collection = []) => mergeStatic(...collection))
-        ::map(() => reducers);
+        .switchMap((collection = []) => Observable.merge(...collection))
+        .map(() => reducers);
 
       sub.add(innerChanges$.subscribe(observer));
       sub.add(outerChanges$.subscribe(observer));

@@ -1,7 +1,0 @@
-export * from './ng-rx-redux/index.js';
-export * from './ng-rx-redux/vendor.js';
-export {FromObservable} from 'rxjs/observable/FromObservable.js';
-
-export const isObservable = (maybeObs) => {
-  return maybeObs && typeof maybeObs.subscribe === 'function';
-}
