@@ -9,7 +9,6 @@ export {share} from 'rxjs/operator/share.js';
 export {publish} from 'rxjs/operator/publish.js';
 export {startWith} from 'rxjs/operator/startWith.js'
 export {scan} from 'rxjs/operator/scan.js'
-export {partition} from 'rxjs/operator/partition.js'
 export {merge, mergeStatic} from 'rxjs/operator/merge.js'
 export {combineLatest, combineLatestStatic} from 'rxjs/operator/combineLatest.js'
 export {filter} from 'rxjs/operator/filter.js'
