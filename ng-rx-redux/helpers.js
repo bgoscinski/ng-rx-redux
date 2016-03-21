@@ -1,4 +1,4 @@
-import {eq, mapKeys, forEach, flowRight, functions} from 'lodash'
+import {forEach, flowRight, functions} from 'lodash'
 import {
   Observable,
   BehaviorSubject,
@@ -44,17 +44,21 @@ const applyMiddlewares = (middlewares = [], base$, ...args) => {
   return middlewares.reduce(apply, base$);
 }
 
-
-
-export const bindActionCreators = (actionCreators, dispatch, dest = {}) => {
+export const bindActionCreators = (actionCreators, dispatch) => {
   if (typeof actionCreators === 'function') {
-    return flowRight(dispatch, actionCreators)
+    return flowRight(dispatch, actionCreators);
   }
 
-  return functions(actionCreators).reduce((dest, creatorName) => {
-    dest[creatorName] = flowRight(dispatch, actionCreators[creatorName]);
-    return dest;
-  }, dest);
+  const boundActionCreators = {};
+  const actionCreatorNames = functions(actionCreators);
+
+  for (let i = 0, len = actionCreatorNames.length; i < len; i++) {
+    const creatorName = actionCreatorNames[i];
+    const boundCreator = flowRight(dispatch, actionCreators[creatorName]);
+    boundActionCreators[creatorName] = boundCreator;
+  }
+
+  return boundActionCreators;
 }
 
 export const createStore = (state$, preMiddlewares = [], postMiddlewares = []) => {
@@ -91,37 +95,41 @@ export const createReducer = (reducingFn) => {
   });
 }
 
-export const composeReducers = (reducers) => {
+export const combineReducers = (reducers) => {
   if (Array.isArray(reducers)) {
-    return composeReducerList(reducers)
+    return combineReducerList(reducers)
   }
 
-  return composeReducerMap(reducers)
+  return combineReducerMap(reducers)
 }
 
-export const composeReducerMap = (reducersMap) => {
+export const combineReducerMap = (reducersMap) => {
   const keys = Object.keys(reducersMap);
   const list = keys.map((name) => reducersMap[name]);
 
-  return decorateState(_composeReducerList(list, {}), (state$) => {
-    const keysMapper = (value, idx) => keys[idx];
+  return decorateState(_combineReducerList(list, {}), (state$) => {
+    const toValuesMap = (valuesList) => {
+      const valuesMap = {};
 
-    return state$::map((values) => {
-      return mapKeys(values, keysMapper);
-    })
+      for (let i = 0, len = keys.length; i < len; i++) {
+        valuesMap[keys[i]] = valuesList[i]
+      }
+
+      return valuesMap;
+    };
+
+    return state$::map(toValuesMap)
   });
 }
 
-export const composeReducerList = (reducersList) => {
-  return _composeReducerList(reducersList, [])
+export const combineReducerList = (reducersList) => {
+  return _combineReducerList(reducersList, [])
 };
 
-const _composeReducerList = (reducersList, initValue) => {
+const _combineReducerList = (reducersList, initValue) => {
   return createState((state$, action$, middlewares = []) => {
-    const rawState$ = combineLatestStatic(reducersList, (...values) => {
-      return values;
-    });
-
+    const toValuesList = (...values) => values;
+    const rawState$ = combineLatestStatic(reducersList, toValuesList);
     const processedState$ = applyMiddlewares(middlewares, rawState$, action$);
 
     reducersList.forEach((reducer) => {
@@ -132,21 +140,22 @@ const _composeReducerList = (reducersList, initValue) => {
   }, initValue)
 }
 
-export const createComposingReducer = (reducingFn) => {
+export const createCombiningReducer = (reducingFn) => {
   return decorateState(createReducer(reducingFn), (rawState$, action$) => {
     return Observable.create((observer) => {
       const outerChanges$ = rawState$::publish();
 
-      const tryBindReducer = (reducer) => {
-        const bindReducer = reducerBindings.get(reducer)
-        if (bindReducer) {
-          bindReducer(action$);
-        }
-      };
-
       let reducers;
-      const sub = outerChanges$.subscribe((_reducers) => {
-        forEach(reducers = _reducers, tryBindReducer);
+      const sub = outerChanges$.subscribe((_reducers = []) => {
+        reducers = _reducers;
+
+        for (let i = 0, len = reducers.length; i < len; i++) {
+          const bindReducer = reducerBindings.get(reducers[i])
+
+          if (bindReducer) {
+            bindReducer(action$);
+          }
+        }
       });
 
       const innerChanges$ = outerChanges$

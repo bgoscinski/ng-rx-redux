@@ -5,8 +5,9 @@ import './rx-repeat.js';
 
 export {default as default} from './module.js'
 export {
-  createReducer,
-  createComposingReducer,
-  composeReducers,
   createStore,
+  createReducer,
+  combineReducers,
+  createCombiningReducer,
+  bindActionCreators,
 } from './helpers.js'

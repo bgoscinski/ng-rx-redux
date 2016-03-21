@@ -35,8 +35,6 @@ config(['$provide', ($provide) => {
                                     ($delegate, $parse, $parseRxExpression) => {
 
     Object.assign($delegate.constructor.prototype, {
-      $$safeApply,
-
       $$rxWatch,
       $rxWatch(ngExpression, objectEquality) {
         return this.$$rxWatch(ngExpression, objectEquality)::share();
@@ -75,10 +73,11 @@ config(['$provide', ($provide) => {
           ::$$rxWatch(ngExpression)
           ::filter((value) => value && typeof value.subscribe === 'function')
           ::switchOperator()
+          ::distinctUntilChanged()
           .subscribe(
-            this.$$safeApply.bind(this, ::observer.next),
-            this.$$safeApply.bind(this, ::observer.error),
-            this.$$safeApply.bind(this, ::observer.complete)
+            (val) => { this::$$safeApply(::observer.next, val) },
+            (err) => { this::$$safeApply(::observer.error, err) },
+            () => { this::$$safeApply(::observer.complete) }
           )
 
         this.$on('$destroy', ::subscription.unsubscribe);

@@ -16,7 +16,7 @@ directive('rxRepeat', ['ngRepeatDirective', '$parseRxExpression', '$createRxExpr
         $scope.$watchCollection = (exp, listener) => {
           delete $scope.$watchCollection; // let the prototypal inheritance do it's job next time
           const rxExpression = $createRxExpression([obsName, asName, asName]);
-          $scope.$$rxWatchRxExpression(rxExpression).forEach(listener);
+          $scope.$$rxWatchRxExpression(rxExpression).subscribe(listener);
         }
 
         link($scope, $element, $attr, ctrl, $transclude);

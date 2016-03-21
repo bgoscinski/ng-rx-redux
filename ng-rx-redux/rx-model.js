@@ -56,7 +56,7 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
         this.onNext = $attrs.onNext && $parse($attrs.onNext);
         this.onNextForm = $attrs.onNextForm && $parse($attrs.onNextForm);
 
-        const getter = get(ngExp);
+        const getter = $parse(ngExp);
         const getNestValue = (formValue) => {
           return getter({[asName] : formValue})
         };
@@ -68,9 +68,12 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
           }
         }
 
-        $scope.$rxWatchObservable(obsName).forEach((formValue) => {
-          this.formValue = formValue;
+        $scope.$rxWatchObservable(obsName).subscribe((formValue) => {
           this.nestValue = getNestValue(formValue);
+
+          if (this.onNextForm) {
+            this.formValue = formValue;
+          }
         })
 
         this.ngOptions = {

@@ -1,4 +1,4 @@
-import {createReducer, createComposingReducer, FromObservable} from 'lang.js'
+import {createReducer, createCombiningReducer, FromObservable} from 'lang.js'
 import {factory, constantFactory} from 'core.js'
 
 constantFactory('todos', (todo) => {
@@ -16,7 +16,7 @@ constantFactory('todos', (todo) => {
     return state.filter((t) => t.value.id !== id);
   }
 
-  return createComposingReducer((state = [], action) => {
+  return createCombiningReducer((state = [], action) => {
     switch (action.type) {
       case 'addTodo': return addTodo(state, action);
       case 'delTodo': return delTodo(state, action);
