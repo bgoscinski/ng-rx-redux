@@ -1,20 +1,19 @@
+import angular from 'angular'
+import 'rxjs/add/operator/map.js'
+import 'rxjs/add/operator/publishBehavior.js'
+import {BehaviorSubject} from 'rxjs/subject/BehaviorSubject.js'
 import {eq} from 'lodash'
-import {set} from 'lodash/fp'
-import {map} from 'rxjs/operator/map.js';
-import {distinctUntilChanged} from 'rxjs/operator/distinctUntilChanged.js';
-import {share} from 'rxjs/operator/share.js';
-import {BehaviorSubject} from 'rxjs/subject/BehaviorSubject.js';
 
 import {directive} from './module.js'
 
 directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $exceptionHandler) => {
-  const priority = ngModelDirective[0].priority + 1;
+  const priority = ngModelDirective[0].priority + 1
 
   const tryCall = (fn, arg1, arg2) => {
     try {
-      fn(arg1, arg2);
+      fn(arg1, arg2)
     } catch (e) {
-      $exceptionHandler(e);
+      $exceptionHandler(e)
     }
   }
 
@@ -30,7 +29,7 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
           stream.next(nextValue)
         }
       }
-    });
+    })
 
     stream.add(() => {
       Object.defineProperty(rxModel.ngModel, propertyName, {
@@ -38,12 +37,12 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
         configurable: true,
         writable: true,
         value: stream.value
-      });
+      })
     })
 
-    rxModel.$scope.$on('$destroy', stream.unsubscribe.bind(stream));
+    rxModel.$scope.$on('$destroy', stream.unsubscribe.bind(stream))
 
-    return stream;
+    return stream
   }
 
   return {
@@ -52,79 +51,54 @@ directive('rxModel', (ngModelDirective, $compile, $parseRxExpression, $parse, $e
     controllerAs: 'rxModel',
     controller: class RxModelController {
       constructor($scope, $element, $attrs) {
-        this.$scope = $scope;
-        this.$element = $element;
+        this.$scope = $scope
+        this.onNext = $parse($attrs.onNext)
 
-        const [obsName, asName, ngExp] = $parseRxExpression($attrs.rxModel);
-        this.onNext = $attrs.onNext && $parse($attrs.onNext);
-        this.onNextForm = $attrs.onNextForm && $parse($attrs.onNextForm);
+        const [obsName, asName, ngExp] = $parseRxExpression($attrs.rxModel)
+        const getter = $parse(ngExp)
+        $scope.$rxWatchObservable(obsName)
+          .map((formValue) => getter({[asName] : formValue}))
+          .subscribe(this.value$ = new BehaviorSubject())
 
-        const getter = $parse(ngExp);
-        const getNestValue = (formValue) => {
-          return getter({[asName] : formValue})
-        };
-
-        if (this.onNextForm) {
-          const setter = set(ngExp);
-          this.getNextFormValue = (nestValue, formValue) => {
-            return setter(nestValue, {[asName]: formValue})[asName]
-          }
-        }
-
-        $scope.$rxWatchObservable(obsName).subscribe((formValue) => {
-          this.nestValue = getNestValue(formValue);
-
-          if (this.onNextForm) {
-            this.formValue = formValue;
-          }
-        })
-
-        this.ngOptions = {
+        $attrs.$set('ngModel', 'rxModel.getSetNgValue')
+        $attrs.$set('ngModelOptions', angular.toJson({
           ...($attrs.rxModelOptions && $scope.$eval($attrs.rxModelOptions) || {}),
           ...($attrs.ngModelOptions && $scope.$eval($attrs.ngModelOptions) || {}),
           getterSetter: true
-        };
+        }))
 
-        $attrs.$set('ngModel', 'rxModel.getSetNgValue');
-        $attrs.$set('ngModelOptions', 'rxModel.ngOptions');
-        $compile($element, null, priority)($scope);
-
-        this.ngModel = this.$element.controller('ngModel');
+        $compile($element, null, priority)($scope)
+        this.ngModel = $element.controller('ngModel')
       }
 
       getSetNgValue(value) {
-        return arguments.length ? this.setNgValue(value) : this.nestValue;
-      }
+        const currValue = this.value$.getValue()
 
-      setNgValue(nextNest) {
-        if (this.onNext && !eq(this.nestValue, nextNest)) {
-          tryCall(this.onNext, this.$scope, {value: nextNest});
-        }
-
-        if (this.onNextForm) {
-          let nextForm = this.getNextFormValue(nextNest, this.formValue);
-          tryCall(this.onNextForm, this.$scope, {value: nextForm});
+        if (arguments.length && !eq(currValue, value)) {
+          tryCall(this.onNext, this.$scope, {value})
+        } else {
+          return currValue
         }
       }
 
       get viewValue$() {
-        return this._viewValue$ || (this._viewValue = hookNgModel(this, '$viewValue'));
+        return this._viewValue$ || (this._viewValue = hookNgModel(this, '$viewValue'))
       }
 
       get modelValue$() {
-        return this._modelValue$ || (this._modelValue = hookNgModel(this, '$modelValue'));
+        return this._modelValue$ || (this._modelValue = hookNgModel(this, '$modelValue'))
       }
 
       get touched$() {
-        return this._touched$ || (this._touched = hookNgModel(this, '$touched'));
+        return this._touched$ || (this._touched = hookNgModel(this, '$touched'))
       }
 
       get dirty$() {
-        return this._dirty$ || (this._dirty = hookNgModel(this, '$dirty'));
+        return this._dirty$ || (this._dirty = hookNgModel(this, '$dirty'))
       }
 
       get invalid$() {
-        return this._invalid$ || (this._invalid = hookNgModel(this, '$invalid'));
+        return this._invalid$ || (this._invalid = hookNgModel(this, '$invalid'))
       }
     }
   }
