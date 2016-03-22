@@ -1,9 +1,5 @@
 # ng-rx-redux
 
-```sh 
-git clone https://github.com/bgoscinski/ng-rx-redux.git
-cd ng-rx-redux
-npm install
-jspm install
-npm start
-```
+Inspired by Redux, powered by RxJS state management in angular 1.x apps.
+
+Check out [bgoscinski/ng-rx-redux-demo](https://github.com/bgoscinski/ng-rx-redux-demo) for usage example.
