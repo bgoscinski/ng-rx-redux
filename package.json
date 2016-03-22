@@ -4,11 +4,13 @@
   "description": "angular@1.x + Rx.js + Redux like state management test",
   "main": "src/index.js",
   "scripts": {
-    "serve": "live-server",
-    "start": "npm run -s serve",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/bgoscinski/ng-rx-redux.git"
+  },
   "author": "bgoscinski",
   "license": "DBAD",
   "devDependencies": {
@@ -17,13 +19,15 @@
   "jspm": {
     "name": "ng-rx-redux",
     "dependencies": {
-      "rxjs": "npm:rxjs@^5.0.0-beta.2"
+      "lodash": "npm:lodash@^4.6.1",
+      "rxjs": "npm:rxjs@^5.0.0-beta.3"
     },
     "devDependencies": {
       "plugin-typescript": "github:frankwallis/plugin-typescript@^4.0.2"
     },
     "peerDependencies": {
       "angular": "github:angular/bower-angular@^1.5.2",
+      "buffer": "github:jspm/nodelibs-buffer@^0.2.0-alpha",
       "core-js": "npm:core-js@^1.2.0",
       "fs": "github:jspm/nodelibs-fs@^0.2.0-alpha",
       "path": "github:jspm/nodelibs-path@^0.2.0-alpha",
@@ -53,4 +57,4 @@
       }
     }
   }
-}
+}
