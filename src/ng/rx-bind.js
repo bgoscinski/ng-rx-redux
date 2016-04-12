@@ -17,7 +17,7 @@ directive('rxBind', ['ngBindDirective', '$parseRxExpression',
         }
 
         const [/*obsName*/, /*asName*/, ngExp] = $parseRxExpression($attr.rxBind);
-        link($scope, $element, {ngBind: ngExp});
+        link($scope, $element, {ngBind: ngExp})
       }
     }
   }
